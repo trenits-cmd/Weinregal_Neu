@@ -49,6 +49,7 @@ fun MainAppScreen(viewModel: WineViewModel) {
     var editTargetWine by remember { mutableStateOf<Wine?>(null) }
     var defaultAddLocation by remember { mutableStateOf("Regal Fach 1") }
     var showQrScannerDialog by remember { mutableStateOf(false) }
+    var showLabelPhotoDialog by remember { mutableStateOf(false) }
     var compartmentContextForDetail by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -194,6 +195,22 @@ fun MainAppScreen(viewModel: WineViewModel) {
                     editTargetWine = fetchedWine
                     showAddEditDialog = true
                 }
+            },
+            onTakePhotoClick = {
+                showQrScannerDialog = false
+                showLabelPhotoDialog = true
+            }
+        )
+    }
+
+    if (showLabelPhotoDialog) {
+        LabelPhotoScannerDialog(
+            defaultLocation = defaultAddLocation,
+            onDismiss = { showLabelPhotoDialog = false },
+            onWineRecognized = { recognizedWine ->
+                showLabelPhotoDialog = false
+                editTargetWine = recognizedWine
+                showAddEditDialog = true
             }
         )
     }
