@@ -16,9 +16,13 @@ data class Wine(
     val year: Int,
     val grapeVariety: String,
     val price: Double,
-    val storageLocation: String, // e.g. "Regal Fach 1" ... "Regal Fach 18", "Kühlschrank", "Speisekammer"
+    val storageLocation: String = "Regal Fach 1",
     val status: WineStatus = WineStatus.IN_STOCK,
     val notes: String = "",
     val qrCode: String = "WINE-${(10000..99999).random()}",
-    val addedDate: Long = System.currentTimeMillis()
+    val addedDate: Long = System.currentTimeMillis(),
+    val wineType: String = "Rotwein", // Rotwein, Weißwein, Rosé, Schaumwein
+    val region: String = "Unbekannte Region",
+    val servingTemperature: String = "16-18 °C",
+    val foodPairing: String = "Fleisch, Käse, Pasta"
 )

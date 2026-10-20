@@ -26,6 +26,10 @@ fun AddEditWineDialog(
     var grapeVariety by remember { mutableStateOf(initialWine?.grapeVariety ?: "") }
     var priceStr by remember { mutableStateOf(initialWine?.price?.toString() ?: "15.00") }
     var storageLocation by remember { mutableStateOf(initialWine?.storageLocation ?: defaultLocation) }
+    var wineType by remember { mutableStateOf(initialWine?.wineType ?: "Rotwein") }
+    var region by remember { mutableStateOf(initialWine?.region ?: "") }
+    var servingTemperature by remember { mutableStateOf(initialWine?.servingTemperature ?: "16-18 °C") }
+    var foodPairing by remember { mutableStateOf(initialWine?.foodPairing ?: "") }
     var notes by remember { mutableStateOf(initialWine?.notes ?: "") }
     var status by remember { mutableStateOf(initialWine?.status ?: WineStatus.IN_STOCK) }
 
@@ -91,20 +95,58 @@ fun AddEditWineDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = wineType,
+                        onValueChange = { wineType = it },
+                        label = { Text("Art (Rot/Weiß/Rosé)") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = grapeVariety,
+                        onValueChange = { grapeVariety = it },
+                        label = { Text("Rebsorte") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
-                    value = grapeVariety,
-                    onValueChange = { grapeVariety = it },
-                    label = { Text("Rebsorte") },
+                    value = region,
+                    onValueChange = { region = it },
+                    label = { Text("Region & Herkunft") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = servingTemperature,
+                        onValueChange = { servingTemperature = it },
+                        label = { Text("Trinktemperatur") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = storageLocation,
+                        onValueChange = { storageLocation = it },
+                        label = { Text("Lagerort") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
-                    value = storageLocation,
-                    onValueChange = { storageLocation = it },
-                    label = { Text("Lagerort (z.B. Regal Fach 1, Kühlschrank)") },
+                    value = foodPairing,
+                    onValueChange = { foodPairing = it },
+                    label = { Text("Passt zu Essen (Food Pairing)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -153,7 +195,11 @@ fun AddEditWineDialog(
                                     price = price,
                                     storageLocation = storageLocation,
                                     notes = notes,
-                                    status = status
+                                    status = status,
+                                    wineType = wineType,
+                                    region = region,
+                                    servingTemperature = servingTemperature,
+                                    foodPairing = foodPairing
                                 )
                                 onSave(wine)
                             }

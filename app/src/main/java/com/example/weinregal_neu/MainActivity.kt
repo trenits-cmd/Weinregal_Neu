@@ -14,11 +14,13 @@ import androidx.compose.material.icons.filled.WineBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.weinregal_neu.data.OpenFoodFactsService
 import com.example.weinregal_neu.model.Wine
 import com.example.weinregal_neu.model.WineStatus
 import com.example.weinregal_neu.ui.screens.*
 import com.example.weinregal_neu.ui.theme.Weinregal_NeuTheme
 import com.example.weinregal_neu.viewmodel.WineViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: WineViewModel by viewModels()
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
 fun MainAppScreen(viewModel: WineViewModel) {
     val wines by viewModel.wines.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     // Dialog states
     var activeDialogWine by remember { mutableStateOf<Wine?>(null) }
@@ -149,7 +152,6 @@ fun MainAppScreen(viewModel: WineViewModel) {
             },
             onEstimatePrice = {
                 viewModel.estimatePriceOnline(activeDialogWine!!.id)
-                // Refresh active wine
                 activeDialogWine = viewModel.wines.value.find { it.id == activeDialogWine!!.id }
             },
             onAssignToCompartment = { location ->
@@ -176,7 +178,7 @@ fun MainAppScreen(viewModel: WineViewModel) {
     }
 
     if (showQrScannerDialog) {
-        QrScanSimulationDialog(
+        RealQrScannerDialog(
             wines = wines,
             onDismiss = { showQrScannerDialog = false },
             onWineScanned = { scannedWine ->
@@ -184,6 +186,14 @@ fun MainAppScreen(viewModel: WineViewModel) {
                 activeDialogWine = scannedWine
                 compartmentContextForDetail = null
                 showDetailDialog = true
+            },
+            onNewBarcodeScanned = { barcode ->
+                showQrScannerDialog = false
+                coroutineScope.launch {
+                    val fetchedWine = OpenFoodFactsService.fetchWineByEan(barcode, defaultAddLocation)
+                    editTargetWine = fetchedWine
+                    showAddEditDialog = true
+                }
             }
         )
     }

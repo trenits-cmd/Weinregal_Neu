@@ -1,7 +1,9 @@
 package com.example.weinregal_neu.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
@@ -34,6 +36,7 @@ fun WineDetailDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 Row(
@@ -68,17 +71,21 @@ fun WineDetailDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                DetailRow("Weinart", wine.wineType)
                 DetailRow("Winzer", wine.winery.ifBlank { "Unbekannt" })
                 DetailRow("Jahrgang", "${wine.year}")
                 DetailRow("Rebsorte", wine.grapeVariety.ifBlank { "Unbekannt" })
+                DetailRow("Region", wine.region.ifBlank { "Unbekannt" })
+                DetailRow("Trinktemperatur", wine.servingTemperature)
+                DetailRow("Passt zu Essen", wine.foodPairing.ifBlank { "Allrounder" })
                 DetailRow("Preis", "%.2f €".format(wine.price))
                 DetailRow("Lagerort", wine.storageLocation)
-                DetailRow("QR-Code", wine.qrCode)
+                DetailRow("QR / Barcode", wine.qrCode)
 
                 if (wine.notes.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Notizen:",
+                        text = "Notizen & Geschmack:",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
