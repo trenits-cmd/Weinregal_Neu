@@ -66,6 +66,7 @@ object PriceLookupService {
 
         val offers = sourceResults
             .flatMap { it.offers }
+            .filter { offer -> isRelevant(wine, offer.title) }
             .sortedBy { it.price }
             .distinctBy { it.merchant + it.title + it.price }
 
@@ -74,6 +75,37 @@ object PriceLookupService {
             offers = offers,
             sources = sourceResults
         )
+    }
+
+    /**
+     * Prueft, ob ein Shop-Treffer zum gesuchten Wein passt. So werden
+     * Preisvorschlaege fuer voellig andere Weine vermieden.
+     */
+    internal fun isRelevant(wine: Wine, productTitle: String): Boolean {
+        val stopWords = setOf(
+            "wein", "weisswein", "rotwein", "rose", "reserve", "trocken",
+            "halbtrocken", "lieblich", "spatlese", "auslese", "kabinett", "bio"
+        )
+        val terms = normalizeForMatch("${wine.name} ${wine.winery} ${wine.grapeVariety}")
+            .split(' ')
+            .filter { term -> term.length >= 4 && term !in stopWords && term.toIntOrNull() == null }
+        if (terms.isEmpty()) return true
+        val haystack = normalizeForMatch(productTitle)
+        return terms.any { term -> haystack.contains(term) }
+    }
+
+    internal fun normalizeForMatch(text: String): String {
+        val german = text.lowercase()
+            .replace("ä", "ae")
+            .replace("ö", "oe")
+            .replace("ü", "ue")
+            .replace("ß", "ss")
+        val withoutAccents = java.text.Normalizer
+            .normalize(german, java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+        return withoutAccents
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
     }
 
     private fun buildQueries(wine: Wine): List<String> {
@@ -177,9 +209,11 @@ object PriceLookupService {
 
     /** Link fuer die manuelle Websuche, wenn keine Quelle einen Preis liefert. */
     fun webSearchUrl(wine: Wine): String {
-        val query = listOf(wine.winery, wine.name, wine.year.toString())
-            .filter { it.isNotBlank() }
-            .joinToString(" ") + " Preis"
+        val query = listOfNotNull(
+            wine.winery.takeIf { it.isNotBlank() },
+            wine.name.takeIf { it.isNotBlank() },
+            wine.year.takeIf { it > 0 }?.toString()
+        ).joinToString(" ") + " Preis"
         return "https://www.google.com/search?q=" + URLEncoder.encode(query, "UTF-8")
     }
 }

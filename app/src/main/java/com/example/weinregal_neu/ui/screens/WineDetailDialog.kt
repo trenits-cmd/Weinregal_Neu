@@ -264,6 +264,16 @@ fun WineDetailDialog(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                                IconButton(
+                                    onClick = { onOpenUrl(offer.url) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.OpenInNew,
+                                        contentDescription = "Im Shop öffnen",
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
                             }
                         }
                     }
