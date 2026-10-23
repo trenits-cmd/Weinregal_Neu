@@ -5,7 +5,7 @@ Foto des Regals mit nummerierten Pfeilen auf alle 18 Fächer, ein durchsuchbares
 Weinarchiv mit Rebsorten-Wissen und ein Bestand, in dem Flaschen per Fingertipp
 entnommen, per QR-Code ergänzt und als CSV gesichert werden.
 
-> **Status:** Version 2.1 – vollständig neu aufgebaut (Datenmodell, Regal-Tab,
+> **Status:** Version 2.2 – vollständig neu aufgebaut (Datenmodell, Regal-Tab,
 > Archiv, Bestand, CSV-Sicherung, Preisabfrage, Tests).
 
 ---
@@ -309,6 +309,13 @@ git push origin v2.0
 * Kamera wird nur für Barcode-Scan und Etikettfoto genutzt.
 
 ---
+
+## Änderungen in 2.2
+
+* Neues Wein-Logo (Flaschenglas in Weinrot).
+* Preisabfrage um Weinfreunde erweitert, mehr Treffer werden geprüft.
+* Bessere Trefferanzeige: Falls keine stark passenden Angebote gefunden
+  werden, werden gefundene Angebote trotzdem als Vorschlag gezeigt.
 
 ## Änderungen in 2.1
 

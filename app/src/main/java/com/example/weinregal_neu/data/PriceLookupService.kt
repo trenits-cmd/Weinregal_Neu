@@ -53,7 +53,8 @@ object PriceLookupService {
 
     private val shops = listOf(
         ShopifyShop("Vinocentral", "https://www.vinocentral.de"),
-        ShopifyShop("Weinpaket", "https://www.weinpaket.de")
+        ShopifyShop("Weinpaket", "https://www.weinpaket.de"),
+        ShopifyShop("Weinfreunde", "https://www.weinfreunde.de")
     )
 
     suspend fun lookup(wine: Wine): PriceLookup = withContext(Dispatchers.IO) {
@@ -64,11 +65,12 @@ object PriceLookupService {
             sourceResults += queryShop(shop, queries)
         }
 
-        val offers = sourceResults
-            .flatMap { it.offers }
-            .filter { offer -> isRelevant(wine, offer.title) }
+        val rawOffers = sourceResults.flatMap { it.offers }
+        val relevant = rawOffers.filter { offer -> isRelevant(wine, offer.title) }
+        val offers = (if (relevant.isNotEmpty()) relevant else rawOffers)
             .sortedBy { it.price }
             .distinctBy { it.merchant + it.title + it.price }
+            .take(6)
 
         PriceLookup(
             query = queries.firstOrNull().orEmpty(),
