@@ -1,33 +1,65 @@
 package com.example.weinregal_neu.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WineBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.weinregal_neu.model.Wine
-import com.example.weinregal_neu.model.WineStatus
+import java.util.Locale
 
+/**
+ * Weinbestand: Flasche entnehmen oder hinzufügen, Preise pflegen,
+ * Lagerplatz aendern und CSV-Sicherung erstellen/einlesen.
+ */
 @Composable
 fun InventoryScreen(
     wines: List<Wine>,
     onAddWineClick: () -> Unit,
     onScanQrClick: () -> Unit,
-    onUpdateAllPricesClick: () -> Unit,
+    onExportCsvClick: () -> Unit,
+    onImportCsvClick: () -> Unit,
+    onWineClick: (Wine) -> Unit,
     onEditWine: (Wine) -> Unit,
-    onDeleteWine: (String) -> Unit,
-    onToggleStatus: (String, WineStatus) -> Unit
+    onDeleteWine: (Wine) -> Unit,
+    onRemoveBottle: (Wine) -> Unit,
+    onAddBottle: (Wine) -> Unit
 ) {
-    val inStockWines = wines.filter { it.status == WineStatus.IN_STOCK }
-    val totalValue = inStockWines.sumOf { it.price }
+    var searchQuery by remember { mutableStateOf("") }
+    var deleteCandidate by remember { mutableStateOf<Wine?>(null) }
+
+    val inStockWines = wines.filter { it.inStock }
+    val bottleCount = inStockWines.sumOf { it.quantity }
+    val totalValue = inStockWines.sumOf { it.price * it.quantity }
+    val filtered = wines
+        .filter { wine ->
+            val query = searchQuery.trim()
+            query.isEmpty() ||
+                wine.name.contains(query, ignoreCase = true) ||
+                wine.winery.contains(query, ignoreCase = true) ||
+                wine.grapeVariety.contains(query, ignoreCase = true) ||
+                wine.storageLocation.contains(query, ignoreCase = true)
+        }
+        .sortedWith(compareByDescending<Wine> { it.inStock }.thenBy { it.name })
 
     Column(
         modifier = Modifier
@@ -36,21 +68,19 @@ fun InventoryScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "Weinbestand & Verwaltung",
+            text = "Weinbestand",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Bestandsübersicht, QR-Code & Preis-Management",
+            text = "Flaschen verwalten, Preise und Lagerplätze pflegen",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Summary Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -59,12 +89,12 @@ fun InventoryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(vertical = 14.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 StatItem(
                     title = "Flaschen",
-                    value = "${inStockWines.size}",
+                    value = bottleCount.toString(),
                     icon = Icons.Default.WineBar
                 )
                 VerticalDivider(
@@ -74,9 +104,9 @@ fun InventoryScreen(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f)
                 )
                 StatItem(
-                    title = "Gesamtwert",
-                    value = "%.2f €".format(totalValue),
-                    icon = Icons.Default.Euro
+                    title = "Weine",
+                    value = wines.size.toString(),
+                    icon = Icons.Default.Inventory2
                 )
                 VerticalDivider(
                     modifier = Modifier
@@ -85,16 +115,15 @@ fun InventoryScreen(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f)
                 )
                 StatItem(
-                    title = "Gesamt",
-                    value = "${wines.size}",
-                    icon = Icons.Default.Inventory
+                    title = "Wert",
+                    value = String.format(Locale.GERMANY, "%.0f €", totalValue),
+                    icon = Icons.Default.WineBar
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Action Buttons Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -116,24 +145,57 @@ fun InventoryScreen(
             ) {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("QR-Scan")
-            }
-
-            OutlinedButton(
-                onClick = onUpdateAllPricesClick,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Update, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Preise")
+                Text("QR / Barcode")
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onExportCsvClick,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("CSV sichern")
+            }
+            OutlinedButton(
+                onClick = onImportCsvClick,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("CSV laden")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Wein, Winzer, Rebsorte oder Lagerort suchen") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    TextButton(onClick = { searchQuery = "" }) { Text("X") }
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Bestandsverwaltung",
+            text = "Bestand (${filtered.size})",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -141,7 +203,7 @@ fun InventoryScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (wines.isEmpty()) {
+        if (filtered.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -149,7 +211,7 @@ fun InventoryScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Keine Weine im System vorhanden.",
+                    text = if (wines.isEmpty()) "Noch keine Weine vorhanden." else "Kein Treffer.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -161,16 +223,44 @@ fun InventoryScreen(
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(wines) { wine ->
+                items(filtered, key = { it.id }) { wine ->
                     InventoryItemCard(
                         wine = wine,
+                        onClick = { onWineClick(wine) },
                         onEdit = { onEditWine(wine) },
-                        onDelete = { onDeleteWine(wine.id) },
-                        onToggleStatus = { newStatus -> onToggleStatus(wine.id, newStatus) }
+                        onDelete = { deleteCandidate = wine },
+                        onRemoveBottle = { onRemoveBottle(wine) },
+                        onAddBottle = { onAddBottle(wine) }
                     )
                 }
             }
         }
+    }
+
+    deleteCandidate?.let { wine ->
+        AlertDialog(
+            onDismissRequest = { deleteCandidate = null },
+            title = { Text("Wein löschen?") },
+            text = {
+                Text(
+                    "„${wine.name}“ wird mit allen Angaben aus dem Archiv entfernt. " +
+                        "Zum Sichern vorher eine CSV-Datei exportieren."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteWine(wine)
+                        deleteCandidate = null
+                    }
+                ) {
+                    Text("Löschen", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteCandidate = null }) { Text("Abbrechen") }
+            }
+        )
     }
 }
 
@@ -205,56 +295,110 @@ fun StatItem(
 @Composable
 fun InventoryItemCard(
     wine: Wine,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onToggleStatus: (WineStatus) -> Unit
+    onRemoveBottle: () -> Unit,
+    onAddBottle: () -> Unit
 ) {
-    val isInStock = wine.status == WineStatus.IN_STOCK
+    val isInStock = wine.inStock
+    val priceText = if (wine.price > 0) String.format(Locale.GERMANY, "%.2f €", wine.price) else "kein Preis"
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = wine.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${wine.storageLocation} • %.2f €".format(wine.price),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = {
-                    onToggleStatus(if (isInStock) WineStatus.OUT_OF_STOCK else WineStatus.IN_STOCK)
-                }) {
-                    Icon(
-                        imageVector = if (isInStock) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                        contentDescription = "Status umschalten",
-                        tint = if (isInStock) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = wine.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${wine.locationLabel} · $priceText",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Bearbeiten", tint = MaterialTheme.colorScheme.secondary)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isInStock) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    }
+                ) {
+                    Text(
+                        text = if (isInStock) "${wine.quantity}×" else "leer",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isInStock) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    FilledTonalButton(
+                        onClick = onRemoveBottle,
+                        enabled = isInStock,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Entnehmen", style = MaterialTheme.typography.labelMedium)
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    FilledTonalButton(
+                        onClick = onAddBottle,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Hinzufügen", style = MaterialTheme.typography.labelMedium)
+                    }
                 }
 
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Löschen", tint = MaterialTheme.colorScheme.error)
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Bearbeiten",
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Löschen",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

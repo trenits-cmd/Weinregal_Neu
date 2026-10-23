@@ -256,25 +256,24 @@ private fun processLabelPhoto(
             .addOnFailureListener {
                 val fallbackWine = Wine(
                     name = "Etikett-Wein",
-                    winery = "Unbekannt",
-                    year = 2023,
-                    grapeVariety = "Cuvée",
-                    price = 15.0,
+                    winery = "",
+                    year = 0,
+                    grapeVariety = "",
+                    price = 0.0,
                     storageLocation = defaultLocation,
-                    status = WineStatus.IN_STOCK,
-                    notes = "Aus Foto extrahiert (OCR fehlgeschlagen)."
+                    notes = "Foto konnte nicht gelesen werden. Bitte Angaben ergänzen."
                 )
                 onResult(fallbackWine, "Kein Text erkannt")
             }
     } catch (e: Exception) {
         val fallbackWine = Wine(
             name = "Etikett-Wein",
-            winery = "Unbekannt",
-            year = 2023,
-            grapeVariety = "Cuvée",
-            price = 15.0,
+            winery = "",
+            year = 0,
+            grapeVariety = "",
+            price = 0.0,
             storageLocation = defaultLocation,
-            status = WineStatus.IN_STOCK
+            notes = "Fehler bei der Bildverarbeitung. Bitte Angaben ergänzen."
         )
         onResult(fallbackWine, "Fehler bei Bildverarbeitung")
     }
@@ -283,12 +282,12 @@ private fun processLabelPhoto(
 private fun parseWineFromOcrText(ocrText: String, defaultLocation: String): Wine {
     val lines = ocrText.lines().map { it.trim() }.filter { it.isNotBlank() }
     val name = lines.firstOrNull() ?: "Etikett-Wein"
-    val winery = if (lines.size > 1) lines[1] else "Unbekannter Winzer"
+    val winery = if (lines.size > 1) lines[1] else ""
 
     // Extract year
-    val yearRegex = Regex("\\b(19[5-9]\\d|20[0-2]\\d)\\b")
+    val yearRegex = Regex("\\b(19[5-9]\\d|20[0-3]\\d)\\b")
     val yearMatch = yearRegex.find(ocrText)
-    val year = yearMatch?.value?.toInt() ?: 2023
+    val year = yearMatch?.value?.toInt() ?: 0
 
     // Extract grape or type
     val lower = ocrText.lowercase()
@@ -301,7 +300,7 @@ private fun parseWineFromOcrText(ocrText: String, defaultLocation: String): Wine
         lower.contains("syrah") || lower.contains("shiraz") -> "Syrah"
         lower.contains("tempranillo") -> "Tempranillo"
         lower.contains("sangiovese") -> "Sangiovese"
-        else -> "Cuvée"
+        else -> ""
     }
 
     val wineType = when {
@@ -316,12 +315,11 @@ private fun parseWineFromOcrText(ocrText: String, defaultLocation: String): Wine
         winery = winery,
         year = year,
         grapeVariety = grape,
-        price = 18.0,
+        price = 0.0,
         storageLocation = defaultLocation,
-        status = WineStatus.IN_STOCK,
-        notes = "Automatisch per Etikett-Foto (OCR) erkannt.",
+        notes = "Automatisch per Etikett-Foto (OCR) erkannt. Bitte prüfen.",
         wineType = wineType,
-        region = "Europa / Lokal",
+        region = "",
         servingTemperature = if (wineType == "Weißwein") "8-10 °C" else "16-18 °C",
         foodPairing = if (wineType == "Weißwein") "Fisch & Meeresfrüchte" else "Dunkles Fleisch & Käse"
     )
